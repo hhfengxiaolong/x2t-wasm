@@ -202,7 +202,7 @@ ARG VER=5
 #RUN cd /core && git pull
 
 # Final WebAssembly Build
-RUN cd /core && ./make.sh
+RUN cd /core && sh make.sh
 
 # Test run xt2.js
-RUN cd /core && ./c2xlsx.sh test.ppt
+RUN cd /core && sh c2xlsx.sh test.ppt
