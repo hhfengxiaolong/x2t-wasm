@@ -41,7 +41,7 @@
 #include "../../DesktopEditor/common/Directory.h"
 
 #include <unordered_map>
-
+#include <iostream>
 namespace DocFileFormat
 {
 	static const int aCodePages[][2] = {
@@ -119,6 +119,7 @@ namespace DocFileFormat
 {
 	_UINT32 WordDocument::LoadDocument(const std::wstring & fileName, const std::wstring & password)
 	{
+		std::cout<< "function::WordDocument::LoadDocument"<<std::endl;
 		m_sFileName = fileName;
 		m_sPassword = password;
 
@@ -132,6 +133,7 @@ namespace DocFileFormat
 
 		if (m_pStorage->SetFile (m_sFileName.c_str()) == false)
 		{
+			std::cout<< "m_pStorage->SetFile (m_sFileName.c_str()) == false"<<std::endl;
 			if (false == LoadDocumentFlat())
 			{
 				Clear();
@@ -141,6 +143,7 @@ namespace DocFileFormat
 //-----------------------------------------------------------------------------------------------------------------
 		if (m_pStorage->GetStream (L"WordDocument", &WordDocumentStream) == false)
 		{
+			std::cout<< "m_pStorage->GetStream (WordDocument, &WordDocumentStream) "<<std::endl;
 			Clear();
             return AVS_ERROR_FILEFORMAT;
 		}
@@ -151,6 +154,7 @@ namespace DocFileFormat
 		{
             if (FIB->m_FibBase.nFib <= Fib1995)
 			{
+				std::cout<< "FIB->m_FibBase.nFib <= Fib1995"<<std::endl;
 				nWordVersion = FIB->m_nWordVersion = 1;
 				
 				if (FIB->m_FibBase.nFib <= Fib1989)
@@ -163,6 +167,8 @@ namespace DocFileFormat
 		{
             if (FIB->m_FibNew.nFibNew <= Fib1995 && FIB->m_FibNew.nFibNew > 0)
 			{
+				std::cout<< "FIB->m_FibNew.nFibNew <= Fib1995 && FIB->m_FibNew.nFibNew"<<std::endl;
+
 				nWordVersion = FIB->m_nWordVersion = 1;
 
 				if (FIB->m_FibNew.nFibNew <= Fib1989)
@@ -175,6 +181,7 @@ namespace DocFileFormat
 
 		if (FIB->m_FibBase.fWhichTblStm)
 		{
+			std::cout<< "FIB->m_FibBase.fWhichTblStm"<<std::endl;
 			if (!m_pStorage->GetStream (L"1Table", &TableStream))
 			{
 				res	=	m_pStorage->GetStream (L"0Table", &TableStream);
@@ -184,12 +191,14 @@ namespace DocFileFormat
 		{
 			if (!m_pStorage->GetStream (L"0Table", &TableStream))
 			{
+				std::cout<< "!m_pStorage->GetStream (0Table, &TableStream"<<std::endl;
 				res	=	m_pStorage->GetStream (L"1Table", &TableStream);
 			}
 		}
 
 		if (FIB->m_FibBase.fEncrypted)
 		{
+			std::cout<< "FIB->m_FibBase.fEncrypted"<<std::endl;
 			encryptionHeader = new EncryptionHeader	(FIB, TableStream);
 
 			if (encryptionHeader->bXOR)
@@ -198,6 +207,7 @@ namespace DocFileFormat
 
 				if (Decryptor.IsVerify() == false) 
 				{
+					std::cout<< "Decryptor.IsVerify()"<<std::endl;
 					Clear();
 
 					if (m_sPassword.empty() )	return AVS_ERROR_DRM;
@@ -207,6 +217,7 @@ namespace DocFileFormat
 			}
 			else if (encryptionHeader->bStandard)
 			{
+				std::cout<< "encryptionHeader->bStandard"<<std::endl;
 				CRYPT::RC4Decryptor Decryptor(encryptionHeader->crypt_data_rc4, m_sPassword);
 
 				if (Decryptor.IsVerify() == false) 
@@ -221,12 +232,16 @@ namespace DocFileFormat
 			}
 			else if (encryptionHeader->bAES)
 			{
+				std::cout<< "encryptionHeader->bAES"<<std::endl;
+
 				CRYPT::ECMADecryptor Decryptor;
 
 				Decryptor.SetCryptData(encryptionHeader->crypt_data_aes);
 
 				if (Decryptor.SetPassword(m_sPassword) == false)
 				{
+					std::cout<< "Decryptor.SetPassword(m_sPassword) == false"<<std::endl;
+
 					Clear();
 
 					if (m_sPassword.empty() )	return AVS_ERROR_DRM;
@@ -247,6 +262,8 @@ namespace DocFileFormat
 		
 		if ((Summary) && (Summary->size() > 0))
 		{
+			std::cout<< "(Summary) && (Summary->size() > 0)"<<std::endl;
+
 			XLS::CFStreamPtr stream = XLS::CFStreamPtr(new XLS::CFStream(Summary));
 			OLEPS::SummaryInformation summary_info(stream);
 			int document_code_page1 = summary_info.GetCodePage(); //from software last open 
@@ -259,6 +276,7 @@ namespace DocFileFormat
 		}
 		if ((DocSummary) && (DocSummary->size() > 0))
 		{
+			std::cout<< "(DocSummary) && (DocSummary->size() > 0)"<<std::endl;
 			XLS::CFStreamPtr stream = XLS::CFStreamPtr(new XLS::CFStream(DocSummary));
 			OLEPS::SummaryInformation doc_summary_info(stream);
 			int document_code_page2 = doc_summary_info.GetCodePage();
@@ -288,6 +306,7 @@ namespace DocFileFormat
 
 		if (TableStream->size() < 1 && nWordVersion > 0)
 		{
+			std::cout<< "TableStream->size() < 1 && nWordVersion > 0"<<std::endl;
 			RELEASEOBJECT(TableStream);
 			m_pStorage->GetStream (L"WordDocument", &TableStream);
 		}
@@ -319,34 +338,40 @@ namespace DocFileFormat
 		// Read all needed PLCFs
 		if (FIB->m_RgLw97.ccpFtn > 0)
 		{
+			std::cout<< "FIB->m_RgLw97.ccpFtn > 0"<<std::endl;
 			FootnoteReferenceCharactersPlex	=	new Plex<FootnoteDescriptor>(FootnoteDescriptor::STRUCTURE_SIZE,	TableStream, FIB->m_FibWord97.fcPlcffndRef, FIB->m_FibWord97.lcbPlcffndRef, nWordVersion);
 			IndividualFootnotesPlex			=	new Plex<EmptyStructure>(EmptyStructure::STRUCTURE_SIZE,			TableStream, FIB->m_FibWord97.fcPlcffndTxt, FIB->m_FibWord97.lcbPlcffndTxt, nWordVersion);
 		}
 	
 		if (nWordVersion > 0 && FIB->m_FibWord97.lcbPlcPad > 0)
-		{
+		{	
+			std::cout<< "nWordVersion > 0 && FIB->m_FibWord97.lcbPlcPad > 0"<<std::endl;
 			OutlineListDescriptorPlex =	new Plex<OutlineListDescriptor>(OutlineListDescriptor::GetSize(nWordVersion),	TableStream, FIB->m_FibWord97.fcPlcPad, FIB->m_FibWord97.lcbPlcPad, nWordVersion);
 		}
 
 		if (FIB->m_RgLw97.ccpEdn > 0)
 		{
+			std::cout<< "FIB->m_RgLw97.ccpEdn > 0"<<std::endl;
 			EndnoteReferenceCharactersPlex	=	new Plex<EndnoteDescriptor>(EndnoteDescriptor::STRUCTURE_SIZE,		TableStream, FIB->m_FibWord97.fcPlcfendRef, FIB->m_FibWord97.lcbPlcfendRef, nWordVersion);
 			IndividualEndnotesPlex			=	new Plex<EmptyStructure>(EmptyStructure::STRUCTURE_SIZE,			TableStream, FIB->m_FibWord97.fcPlcfendTxt, FIB->m_FibWord97.lcbPlcfendTxt, nWordVersion);
 		}
 
 		if (FIB->m_RgLw97.ccpHdr > 0)
 		{
+			std::cout<< "FIB->m_RgLw97.ccpHdr > 0"<<std::endl;
 			HeaderStoriesPlex =	new Plex<EmptyStructure>( EmptyStructure::STRUCTURE_SIZE, TableStream, FIB->m_FibWord97.fcPlcfHdd, FIB->m_FibWord97.lcbPlcfHdd, nWordVersion);
 		}
 
         if (FIB->m_RgLw97.ccpAtn > 0)
-		{
+		{	
+			std::cout<< "FIB->m_RgLw97.ccpAtn > 0"<<std::endl;
 			AnnotationsReferencePlex		=	new Plex<AnnotationReferenceDescriptor>(AnnotationReferenceDescriptor::GetSize(nWordVersion), TableStream, FIB->m_FibWord97.fcPlcfandRef, FIB->m_FibWord97.lcbPlcfandRef, nWordVersion);
 			IndividualCommentsPlex			=	new Plex<EmptyStructure>	(EmptyStructure::STRUCTURE_SIZE,	TableStream, FIB->m_FibWord97.fcPlcfandTxt,		FIB->m_FibWord97.lcbPlcfandTxt,		nWordVersion);
 		}
 
 		if (FIB->m_FibWord2002.lcbAtrdExtra > 0 && AnnotationsReferencePlex)
 		{
+			std::cout<< "FIB->m_FibWord2002.lcbAtrdExtra > 0 && AnnotationsReferencePlex"<<std::endl;
 			size_t count = AnnotationsReferencePlex->Elements.size();
 			AnnotationsReferencesEx = new AnnotationReferenceExDescriptors(count, TableStream, FIB->m_FibWord2002.fcAtrdExtra, FIB->m_FibWord2002.lcbAtrdExtra);
 		}
@@ -399,6 +424,7 @@ namespace DocFileFormat
 			}
 		}
 
+		std::cout<< "AnnotStartEndCPs.push_back(ann);"<<std::endl;
 		AutoTextPlex						=	new Plex<EmptyStructure>(EmptyStructure::STRUCTURE_SIZE, TableStream, FIB->m_FibWord97.fcPlcfGlsy,   FIB->m_FibWord97.lcbPlcfGlsy, nWordVersion);
 		
 		FieldsPlex							=	new Plex<FieldCharacter>(FieldCharacter::STRUCTURE_SIZE, TableStream, FIB->m_FibWord97.fcPlcfFldMom, FIB->m_FibWord97.lcbPlcfFldMom, nWordVersion);
@@ -411,6 +437,7 @@ namespace DocFileFormat
 		
 		if (m_pCallFunc)
 		{
+			std::cout<< "m_pCallFunc"<<std::endl;
 			m_pCallFunc->OnProgress(m_pCallFunc->caller, DOC_ONPROGRESSEVENT_ID, 200000 );
 
 			SHORT bCancel = 0;
@@ -452,6 +479,7 @@ namespace DocFileFormat
 				return AVS_ERROR_FILEFORMAT;
 			}
 		}
+		std::cout<< "SHORT bCancel = 0;"<<std::endl;
 		if (FontTable)
 		{
 			std::unordered_map<int, int> fonts_charsets;
@@ -478,7 +506,7 @@ namespace DocFileFormat
 				}
 			}
 		}
-
+		std::cout<< "bool bFontsCodePage = false;"<<std::endl;
 		if (FIB->m_FibWord97.lcbClx > 0)
 		{
 			FIB->m_FibBase.fComplex = true;
@@ -489,6 +517,7 @@ namespace DocFileFormat
 		
         if (FIB->m_FibWord97.lcbClx < 1 || ((Text) && (Text->empty())))
 		{
+			std::cout<< "FIB->m_FibWord97.lcbClx < 1 || ((Text) && (Text->empty()))"<<std::endl;
 			int cb = FIB->m_FibBase.fcMac - FIB->m_FibBase.fcMin;
 
 			if (cb > 0)
@@ -526,7 +555,7 @@ namespace DocFileFormat
 				}
 			}
 		}
-
+		std::cout<< "PictureBulletsCPsMap.insert (std::make_pair( k, j ));"<<std::endl;
 		// Build a dictionaries of all PAPX
 		AllPapx			=	new std::map<int, ParagraphPropertyExceptions*>();
 		AllPapxVector	=	new std::vector<int>();
@@ -540,6 +569,8 @@ namespace DocFileFormat
 				AllPapxVector->push_back(nVal);
 			}
 		}
+
+		std::cout<< "AllPapxVector->push_back(nVal);"<<std::endl;
 
 		std::sort (AllPapxVector->begin(), AllPapxVector->end());
 
@@ -558,6 +589,7 @@ namespace DocFileFormat
 		}
 
 		//build a dictionary of all SEPX
+		std::cout<< "build a dictionary of all SEPX"<<std::endl;
 		if ( !SectionPlex->Elements.empty() )
 		{
 			AllSepx = new std::map<int, SectionPropertyExceptions*>();
@@ -580,7 +612,7 @@ namespace DocFileFormat
 				RELEASEARRAYOBJECTS( bytes );
 			}
 		}
-
+		std::cout<< "m_pCallFunc"<<std::endl;
 		if (m_pCallFunc)
 		{
 			m_pCallFunc->OnProgress(m_pCallFunc->caller, DOC_ONPROGRESSEVENT_ID, 500000 );
